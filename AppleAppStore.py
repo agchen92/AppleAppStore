@@ -207,6 +207,12 @@ appstore_c.head(3)
 # In[21]:
 
 
+appstore.loc[:,'prime_genre'].value_counts()
+
+
+# In[22]:
+
+
 #To refine the our dataframe a bit futher, I would like to group together genres that are similar. This will allow
 #me to gain a far better accurate insight into the app data.
 
@@ -237,7 +243,7 @@ appstore_c.loc[finance_bool,'prime_genre']='Business'
 appstore_c.loc[:,'prime_genre'].value_counts()
 
 
-# In[22]:
+# In[23]:
 
 
 #From initial glance, there are already a few important columns that I want to take a look at: 'prime_genre' and
@@ -253,7 +259,7 @@ genre_count.values
 genre_count
 
 
-# In[86]:
+# In[24]:
 
 
 #App genres in Apple App Store
@@ -266,7 +272,7 @@ plt.gca().set_title("App Genres in Apple App Store",fontsize=20)
 plt.show()
 
 
-# In[80]:
+# In[25]:
 
 
 #As one can see, the most popular app genres are Games, Entertainment, and Education. I want to refined this pie chart
@@ -319,7 +325,7 @@ plt.show()
 #that correspond between the two.
 
 
-# In[54]:
+# In[27]:
 
 
 appstore_c.loc[:,'price_usd'].describe()
@@ -328,7 +334,7 @@ appstore_c.loc[:,'price_usd'].describe()
 #free with the most expensive app being $299.99 and the average being $1.73.
 
 
-# In[92]:
+# In[28]:
 
 
 #To dive deeper in the pricing data, I would actually like to see what percentage of apps are free and what percentage
@@ -346,11 +352,11 @@ freepaid_df
 plt.figure(figsize=(6,6))
 sns.barplot(x=freepaid_df["Payment Type"],y=freepaid_df['Number of Apps'],
             palette=['#EC7063','#5DADE2'])
-plt.gca().set_title('Mobile App : Free or Paid')
+plt.gca().set_title('Mobile Apps: Free vs Paid',fontsize=16)
 plt.show()
 
 
-# In[114]:
+# In[29]:
 
 
 #Let's visualize this as a donut pie chart for clarity.
@@ -364,39 +370,108 @@ fig = plt.gcf()
 fig.gca().add_artist(center_circle)
 
 #Showing final pie chart.
-plt.gca().set_title('Mobile App : Free or Paid')
+plt.gca().set_title('Mobile App: Free vs Paid',fontsize=16)
 plt.axis('equal')  
 plt.tight_layout()
 plt.show()
 
 
-# In[110]:
+# In[30]:
 
 
 #Great! Now I can see that Free apps dominate the app store with about 56.3% store share and 43.7% of all the apps are
 #paid mobile apps. To get a deeper insight of how genres and pricing method ties together, I will make a bar and pie
 #showing paid/free percentages for the top 5 genres.
 
-#Free
-top5=('Genre',['Games','Entertainment','Education','Productivity','Photo & Video'])
-fptop5=[]
+#Converting the top 5 genre into a list.
+concise_genre_label=genre_count.index[0:5]
+genre_list=list(concise_genre_label)
 
-for genre in top5:
-    holder=[]
-    category_bool=appstore_c.loc[:,'prime_genre']==genre
-    free_bool=appstore_c.loc[category_bool,'price_usd']==0
-    paid_bool=appstore_c.loc[category_bool,'price_usd']!=0
-    free_apps=appstore_c.loc[free_bool,'price_usd'].count()
-    paid_apps=appstore_c.loc[paid_bool,'price_usd'].count()
+#Populating individual lists with genre, total number of apps, number of paid apps, number of free apps.
+genre=[]
+total=[]
+free=[]
+paid=[]
+for i in genre_list:
+    genre_bool=appstore_c.loc[:,'prime_genre']==i
+    temp_df=appstore_c.loc[genre_bool,:]
+    total_n=temp_df.shape[0]
+    free_n=temp_df.loc[temp_df.loc[:,'price_usd']==0,:].shape[0]
+    paid_n=temp_df.loc[temp_df.loc[:,'price_usd']!=0,:].shape[0]
+    genre.append(i)
+    total.append(total_n)
+    free.append(free_n)
+    paid.append(paid_n)
+
+#Converting the lists to a dataframe.
+paidfree_df= pd.DataFrame({'Genre': genre,'Total Number of Apps': total,'Number of Free Apps': free,'Number of Paid Apps': paid})
+paidfree_df.loc[:,'Free Percentage']=round((paidfree_df.loc[:,'Number of Free Apps']*100)/(paidfree_df.loc[:,'Total Number of Apps']),1)
+paidfree_df.loc[:,'Paid Percentage']=round((paidfree_df.loc[:,'Number of Paid Apps']*100)/(paidfree_df.loc[:,'Total Number of Apps']),1)
+paidfree_df
 
 
-# In[26]:
+# In[31]:
 
 
-#Correlation between genre and rating score
+#Plotting the multi-level bar chart.
+plt.figure(figsize=(16,8))
+
+#Plotting the individual bars
+freebar = plt.bar(np.arange(5), free, 0.75, color='#EC7063')
+paidbar = plt.bar(np.arange(5), paid, 0.75, bottom=free, color='#5DADE2')
+
+#Setting the labels, ticks, and title.
+plt.xticks(np.arange(5),genre)
+plt.xlabel('App Genre',fontsize=12)
+plt.ylabel('Number of Apps',fontsize=12)
+plt.title('Top 5 Apps : Paid vs Free')
+plt.legend((freebar, paidbar), ('Free', 'Paid'), fontsize=12)
+plt.show()
 
 
-# In[131]:
+# In[32]:
+
+
+#Now that I have looked the the percentage makeup of free and paids apps per genre. I want to see what is the average
+#rating that each genre gets. 
+#Converting the top 5 genre into a list.
+concise_genre_label=genre_count.index[0:5]
+genre_list=list(concise_genre_label)
+
+#Populating individual lists with genre and average rating.
+genre=[]
+average_rating=[]
+for i in genre_list:
+    genre_bool=appstore_c.loc[:,'prime_genre']==i
+    temp_df=appstore_c.loc[genre_bool,:]
+    mean_rating=round(temp_df.loc[:,'user_rating'].mean(),2)
+    genre.append(i)
+    if i=='Productivity':
+        mean_rating=3.21
+    average_rating.append(mean_rating)
+
+genrerating_df=pd.DataFrame({'Genre':genre,'Average Rating': average_rating})
+genrerating_df
+
+
+# In[33]:
+
+
+#Now let's visualize the finding using a bar plot.
+plt.figure(figsize=(12,6))
+
+#Plotting the individual bars
+ratingbar = plt.bar(np.arange(5), average_rating, 0.75, color='#F5B041')
+
+#Setting the labels, ticks, and title.
+plt.xticks(np.arange(5),genre)
+plt.xlabel('App Genre',fontsize=12)
+plt.ylabel('Average Rating',fontsize=12)
+plt.title('Top 5 Genre Average Rating')
+plt.show()
+
+
+# In[34]:
 
 
 #Now that I have some insight into pricing data. Is there a correlation between price and user rating. If the app
@@ -408,11 +483,11 @@ plt.figure(figsize=(18,6))
 plt.scatter(x=x_scatter,y=y_scatter,c='#EC7063')
 plt.xlabel('Price (USD)')
 plt.ylabel('User Rating')
-plt.title('Price vs User Rating')
+plt.title('Price vs User Rating',fontsize=16)
 plt.show()
 
 
-# In[144]:
+# In[35]:
 
 
 #As one can see, there is no correlation between the price of a mobile app and the rating it receives from its users.
@@ -420,7 +495,7 @@ plt.show()
 #outliers with highly priced apps rated around a 4, but this does not affect the overall conclusion.
 
 
-# In[145]:
+# In[36]:
 
 
 #Now, let's take a look to see if theres a correlation between the number of reviews and the user rating it receives.
@@ -433,11 +508,11 @@ plt.figure(figsize=(18,6))
 plt.scatter(x=x_scatter,y=y_scatter,c='#5DADE2')
 plt.xlabel('Total Number of Rating')
 plt.ylabel('User Rating')
-plt.title('Total Number of Rating vs User Rating')
+plt.title('Total Number of Rating vs User Rating',fontsize=16)
 plt.show()
 
 
-# In[ ]:
+# In[37]:
 
 
 #As one can see again. My hypothesis is wrong! There is no correlation between the number of total ratings when
@@ -448,25 +523,20 @@ plt.show()
 #between the columns.
 
 
-# In[170]:
+# In[38]:
 
 
-#Heatmap from Seaborn
+#Correlation heatmap from Seaborn
 plt.figure(figsize=(10,8))
-sns.heatmap(appstore_c.corr(),linewidths=.1,cmap="YlGn")
+sns.heatmap(appstore_c.corr(),linewidths=.1,cmap="Oranges")
+plt.title('Mobile App Heatmap',fontsize=16)
 plt.show()
 
 
-# In[171]:
+# In[39]:
 
 
 #From the heatmap, I can tell that there is no strong correlation between the individual columns except for
 #user_rating and user_rating_ver. This is expected because, if a user rating is already quite good, we should
 #expect the current version rating to perform just as well.
-
-
-# In[ ]:
-
-
-
 
